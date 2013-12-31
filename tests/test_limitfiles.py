@@ -32,8 +32,8 @@ class TestLimitFiles(unittest.TestCase):
         self.notifier.stop()
         shutil.rmtree(self.workdir, True)
 
-    def watch(self, *args, **kwargs):
-        return self.limits.add_watch(self.workdir, *args, **kwargs)
+    def watch(self, **kwargs):
+        return self.limits.add_watch(self.workdir, **kwargs)
 
     def temp_filenames(self, *args):
         for num in range(*args):
@@ -57,6 +57,6 @@ class TestLimitFiles(unittest.TestCase):
         self.assertSequenceEqual(actual, expected)
 
     def test_count_limit(self):
-        self.watch(5, 2)
+        self.watch(high=5, low=2)
         self.touch_files(6)
         self.assertFilesLeft(4, 6)

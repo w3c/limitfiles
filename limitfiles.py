@@ -20,52 +20,33 @@ import pyinotify
 from stat import S_ISREG
 
 class LimitProcessor(pyinotify.ProcessEvent):
-    def my_init(self):
-        self.limits = {}
-
-    def register_limit(self, limiter):
-        self.limits[limiter.dir_name] = limiter
-
-    def deregister_limit(self, dir_name):
-        del self.limits[dir_name]
-
-    def process_IN_DELETE(self, event):
-        self.limits[event.path].file_gone(event.pathname)
-
-    process_IN_MOVED_FROM = process_IN_DELETE
+    def my_init(self, high, low):
+        self.files = {}
+        self.max = high
+        self.min = low
 
     def process_IN_CREATE(self, event):
-        self.limits[event.path].file_touched(event.pathname)
+        try:
+            stats = os.stat(event.pathname)
+        except FileNotFoundError:
+            return
+        if not S_ISREG(stats.st_mode):
+            return
+        self.files[event.pathname] = stats.st_mtime
+        if len(self.files) >= self.max:
+            self.clean_files()
 
     process_IN_ATTRIB = process_IN_CREATE
     process_IN_MODIFY = process_IN_CREATE
     process_IN_MOVED_TO = process_IN_CREATE
 
-
-class FileLimiter(object):
-    # understands limit semantics and enforces the policy
-    def __init__(self, dir_name, hi_count, lo_count):
-        self.dir_name = dir_name
-        self.files = {}
-        self.max = hi_count
-        self.min = lo_count
-
-    def file_touched(self, path):
+    def process_IN_DELETE(self, event):
         try:
-            stats = os.stat(path)
-        except FileNotFoundError:
-            return
-        if not S_ISREG(stats.st_mode):
-            return
-        self.files[path] = stats.st_mtime
-        if len(self.files) >= self.max:
-            self.clean_files()
-
-    def file_gone(self, path):
-        try:
-            del self.files[path]
+            del self.files[event.pathname]
         except KeyError:
             pass
+
+    process_IN_MOVED_FROM = process_IN_DELETE
 
     def clean_files(self):
         sorted_names = sorted(self.files.keys(), key=self.files.get)
@@ -80,14 +61,5 @@ class LimitManager(pyinotify.WatchManager):
                    if name.startswith('process_')):
         mask |= pyinotify.EventsCodes.OP_FLAGS.get(method, 0)
 
-    def __init__(self, *args, **kwargs):
-        self.processor = LimitProcessor()
-        super().__init__(*args, **kwargs)
-
-    def add_watch(self, path, *args, **kwargs):
-        self.processor.register_limit(FileLimiter(path, *args, **kwargs))
-        return super().add_watch(path, self.mask, self.processor)
-
-    def del_watch(self, wd):
-        self.processor.deregister_limit(self.get_path(wd))
-        return super().del_watch(wd)
+    def add_watch(self, path, **kwargs):
+        return super().add_watch(path, self.mask, LimitProcessor(**kwargs))
