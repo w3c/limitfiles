@@ -60,3 +60,15 @@ class TestLimitFiles(unittest.TestCase):
         self.watch(high=5, low=2)
         self.touch_files(6)
         self.assertFilesLeft(4, 6)
+
+    def test_count_limit_after_files_exist(self):
+        self.touch_files(3)
+        self.watch(high=5, low=2)
+        self.touch_files(3)
+        self.assertFilesLeft(4, 6)
+
+    def test_count_limit_on_existing_files(self):
+        self.touch_files(6)
+        self.watch(high=5, low=2)
+        self.assertFilesLeft(4, 6)
+

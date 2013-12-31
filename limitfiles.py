@@ -20,21 +20,26 @@ import pyinotify
 from stat import S_ISREG
 
 class LimitProcessor(pyinotify.ProcessEvent):
-    def my_init(self, high, low):
+    def my_init(self, dir_name, high, low):
         self.files = {}
         self.max = high
         self.min = low
+        for filename in os.listdir(dir_name):
+            self.record_file(os.path.join(dir_name, filename))
+        self.clean_files()
 
-    def process_IN_CREATE(self, event):
+    def record_file(self, path):
         try:
-            stats = os.stat(event.pathname)
+            stats = os.stat(path)
         except FileNotFoundError:
             return
         if not S_ISREG(stats.st_mode):
             return
-        self.files[event.pathname] = stats.st_mtime
-        if len(self.files) >= self.max:
-            self.clean_files()
+        self.files[path] = stats.st_mtime
+
+    def process_IN_CREATE(self, event):
+        self.record_file(event.pathname)
+        self.clean_files()
 
     process_IN_ATTRIB = process_IN_CREATE
     process_IN_MODIFY = process_IN_CREATE
@@ -49,6 +54,8 @@ class LimitProcessor(pyinotify.ProcessEvent):
     process_IN_MOVED_FROM = process_IN_DELETE
 
     def clean_files(self):
+        if len(self.files) < self.max:
+            return
         sorted_names = sorted(self.files.keys(), key=self.files.get)
         for path in itertools.islice(sorted_names, self.max - self.min):
             os.unlink(path)
@@ -62,4 +69,5 @@ class LimitManager(pyinotify.WatchManager):
         mask |= pyinotify.EventsCodes.OP_FLAGS.get(method, 0)
 
     def add_watch(self, path, **kwargs):
-        return super().add_watch(path, self.mask, LimitProcessor(**kwargs))
+        processor = LimitProcessor(dir_name=path, **kwargs)
+        return super().add_watch(path, self.mask, processor)
