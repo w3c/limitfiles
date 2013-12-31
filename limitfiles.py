@@ -13,6 +13,7 @@
 # Written December 2013 by Brett Smith <brett@w3.org>
 # This module depends on the third-party pyinotify module.
 
+import errno
 import itertools
 import os
 import pyinotify
@@ -40,8 +41,10 @@ class LimitProcessor(pyinotify.ProcessEvent):
         path = os.path.join(self.dir_name, filename)
         try:
             stats = os.stat(path)
-        except FileNotFoundError:
-            return
+        except OSError as error:
+            if error.errno in (errno.ENOENT, errno.EPERM):
+                return
+            raise
         if not S_ISREG(stats.st_mode):
             return
         self.files[path] = stats.st_mtime
