@@ -39,10 +39,13 @@ class TestLimitFiles(unittest.TestCase):
         for num in range(*args):
             yield str(num)
 
+    def workpath(self, filename):
+        return os.path.join(self.workdir, str(filename))
+
     def touch_files(self, count):
         stop = self.next_name + count
         for name in self.temp_filenames(self.next_name, stop):
-            path = os.path.join(self.workdir, name)
+            path = self.workpath(name)
             stamp = int(name)
             open(path, 'w').close()
             os.utime(path, (stamp, stamp))
@@ -75,6 +78,21 @@ class TestLimitFiles(unittest.TestCase):
         self.touch_files(6)
         self.watch(high=5, low=2)
         self.assertFilesLeft(4, 7)
+
+    def test_limit_respects_mtime(self):
+        self.watch(high=5, low=2)
+        self.touch_files(4)
+        os.utime(self.workpath(1), (10, 10))
+        self.touch_files(2)
+        self.assertFilesLeft(['1', '5', '6'])
+
+    def test_limit_respects_deletes(self):
+        self.watch(high=5, low=1)
+        self.touch_files(4)
+        for num in [1, 2]:
+            os.unlink(self.workpath(num))
+        self.touch_files(2)
+        self.assertFilesLeft(3, 7)
 
     def test_match_limit(self):
         self.watch(high=2, low=1, match='[1-3]')
