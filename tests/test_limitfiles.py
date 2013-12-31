@@ -48,27 +48,31 @@ class TestLimitFiles(unittest.TestCase):
             os.utime(path, (stamp, stamp))
         self.next_name = stop
 
-    def assertFilesLeft(self, first, last):
+    # Call with one sequence, or arguments to temp_filenames
+    def assertFilesLeft(self, arg1, *args):
+        if not args:
+            expected = arg1
+        else:
+            expected = list(self.temp_filenames(arg1, *args))
         while self.notifier.check_events():
             self.notifier.read_events()
             self.notifier.process_events()
-        actual = sorted(os.listdir(self.workdir))
-        expected = list(self.temp_filenames(first, last + 1))
+        actual = sorted(os.listdir(self.workdir), key=int)
         self.assertSequenceEqual(actual, expected)
 
     def test_count_limit(self):
         self.watch(high=5, low=2)
         self.touch_files(6)
-        self.assertFilesLeft(4, 6)
+        self.assertFilesLeft(4, 7)
 
     def test_count_limit_after_files_exist(self):
         self.touch_files(3)
         self.watch(high=5, low=2)
         self.touch_files(3)
-        self.assertFilesLeft(4, 6)
+        self.assertFilesLeft(4, 7)
 
     def test_count_limit_on_existing_files(self):
         self.touch_files(6)
         self.watch(high=5, low=2)
-        self.assertFilesLeft(4, 6)
+        self.assertFilesLeft(4, 7)
 
