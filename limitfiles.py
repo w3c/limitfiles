@@ -16,19 +16,28 @@
 import itertools
 import os
 import pyinotify
+import re
 
 from stat import S_ISREG
 
 class LimitProcessor(pyinotify.ProcessEvent):
-    def my_init(self, dir_name, high, low):
+    def my_init(self, dir_name, high, low, match=None):
+        self.dir_name = dir_name
         self.files = {}
         self.max = high
         self.min = low
+        if match is None:
+            self.match = lambda name: True
+        else:
+            self.match = re.compile(match).search
         for filename in os.listdir(dir_name):
-            self.record_file(os.path.join(dir_name, filename))
+            self.record_file(filename)
         self.clean_files()
 
-    def record_file(self, path):
+    def record_file(self, filename):
+        if not self.match(filename):
+            return
+        path = os.path.join(self.dir_name, filename)
         try:
             stats = os.stat(path)
         except FileNotFoundError:
@@ -38,7 +47,7 @@ class LimitProcessor(pyinotify.ProcessEvent):
         self.files[path] = stats.st_mtime
 
     def process_IN_CREATE(self, event):
-        self.record_file(event.pathname)
+        self.record_file(event.name)
         self.clean_files()
 
     process_IN_ATTRIB = process_IN_CREATE

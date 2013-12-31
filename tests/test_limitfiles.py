@@ -76,3 +76,10 @@ class TestLimitFiles(unittest.TestCase):
         self.watch(high=5, low=2)
         self.assertFilesLeft(4, 7)
 
+    def test_match_limit(self):
+        self.watch(high=2, low=1, match='[1-3]')
+        self.touch_files(8)
+        base_expected = list(self.temp_filenames(4, 9))
+        self.assertFilesLeft(['3'] + base_expected)
+        self.touch_files(3)
+        self.assertFilesLeft(base_expected + ['9', '11'])
