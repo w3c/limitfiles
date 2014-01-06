@@ -14,6 +14,7 @@
 # This module depends on the third-party pyinotify module.
 
 import pyinotify
+import tempfile
 
 import limitfiles
 import tests.limitfiles_common as lftests
@@ -42,3 +43,8 @@ class TestLimitFiles(lftests.LimitFilesTestCase):
 
     def test_bad_regexp_fails(self):
         self.assertRaises(ValueError, self.watch, low=1, high=2, match='[')
+
+    def test_nondir_watch_fails(self):
+        with tempfile.NamedTemporaryFile(prefix='limitfiles') as tmpfile:
+            self.assertRaises(ValueError, self.limits.add_watch, tmpfile.name,
+                              low=1, high=2)

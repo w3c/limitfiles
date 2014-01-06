@@ -38,7 +38,12 @@ class LimitProcessor(pyinotify.ProcessEvent):
             except re.error as error:
                 raise ValueError("bad match regexp {!r}: {}".
                                  format(match, error))
-        for filename in os.listdir(dir_name):
+        try:
+            with self._skip_os_errors():
+                listing = os.listdir(dir_name)
+        except OSError as error:
+            raise ValueError(error)
+        for filename in listing:
             self._record_file(filename)
         self._clean_files()
 
