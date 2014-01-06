@@ -69,7 +69,7 @@ class LimitFilesTestCase(unittest.TestCase):
     def test_count_limit_on_existing_files(self):
         self.touch_files(6)
         self.watch(high=5, low=2)
-        self.assertFilesLeft(4, 7)
+        self.assertFilesLeft(5, 7)
 
     def test_limit_respects_mtime(self):
         self.watch(high=5, low=2)

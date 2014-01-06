@@ -26,8 +26,8 @@ class LimitProcessor(pyinotify.ProcessEvent):
     def my_init(self, dir_name, high, low, match=None):
         self.dir_name = dir_name
         self.files = {}
-        self.max = high
         self.min = low
+        self.delete_threshold = high - low
         if match is None:
             self.match = lambda name: True
         else:
@@ -54,10 +54,10 @@ class LimitProcessor(pyinotify.ProcessEvent):
                 self.files[path] = stats.st_mtime
 
     def _clean_files(self):
-        if len(self.files) < self.max:
+        deletes_left = len(self.files) - self.min
+        if deletes_left < self.delete_threshold:
             return
         sorted_names = sorted(self.files.keys(), key=self.files.get)
-        deletes_left = len(self.files) - self.min
         for path in itertools.takewhile(lambda x: deletes_left > 0,
                                         sorted_names):
             del self.files[path]
