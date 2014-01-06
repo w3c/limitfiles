@@ -109,3 +109,69 @@ class LimitManager(pyinotify.WatchManager):
     def add_watch(self, path, **kwargs):
         processor = LimitProcessor(dir_name=path, **kwargs)
         return super().add_watch(path, self.mask, processor)
+
+
+def _parse_options(args):
+    import optparse
+    parser = optparse.OptionParser(usage="%prog [options]")
+    parser.add_option('-c', '--config',
+                      dest='conf_name', default='/etc/limitfiles.ini',
+                      help="use this configuration file")
+    parser.add_option('-f', '--foreground',
+                      dest='daemonize', action='store_false', default=True,
+                      help="run in the foreground")
+    parser.add_option('-p', '--pidfile',
+                      dest='pidfile', default=False,
+                      help="write PID to this file")
+    return parser.parse_args(args)
+
+def _config_error(message):
+    print("Configuration error:", message, file=sys.stderr)
+    sys.exit(3)
+
+def _config_warning(sec_name, message):
+    print("Warning: can't watch {}: {}".format(sec_name, message),
+          file=sys.stderr)
+
+def _iter_config(config):
+    for sec_name in config.sections():
+        watch_args = {}
+        try:
+            dir_name = config.get(sec_name, 'directory')
+            watch_args['high'] = config.getint(sec_name, 'max')
+            watch_args['low'] = config.getint(sec_name, 'keep')
+        except configparser.Error as error:
+            _config_warning(sec_name, error)
+            continue
+        watch_args['match'] = config[sec_name].get('match')
+        if not os.path.isdir(dir_name):
+            _config_warning(sec_name, "{} is not a directory".format(dir_name))
+        else:
+            yield dir_name, watch_args
+
+def _build_watch_manager(filename):
+    import configparser
+    config = configparser.SafeConfigParser()
+    if not config.read(filename):
+        _config_error("Could not parse {}".format(filename))
+    watch_manager = LimitManager()
+    success = False
+    for dir_name, watch_args in _iter_config(config):
+        try:
+            success = watch_manager.add_watch(dir_name, **watch_args) or success
+        except ValueError as error:
+            _config_warning(dir_name, error)
+    if not success:
+        _config_error("No valid sections")
+    return watch_manager
+
+def main(args):
+    options, args = _parse_options(args)
+    watches = _build_watch_manager(options.conf_name)
+    notifier = pyinotify.Notifier(watches)
+    notifier.loop(daemonize=options.daemonize, pid_file=options.pidfile)
+
+
+if __name__ == '__main__':
+    import sys
+    main(sys.argv[1:])
