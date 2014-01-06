@@ -40,3 +40,5 @@ class TestLimitFiles(lftests.LimitFilesTestCase):
     def test_upsidedown_count_fails(self):
         self.assertRaises(ValueError, self.watch, high=2, low=4)
 
+    def test_bad_regexp_fails(self):
+        self.assertRaises(ValueError, self.watch, low=1, high=2, match='[')

@@ -33,7 +33,11 @@ class LimitProcessor(pyinotify.ProcessEvent):
         elif match is None:
             self.match = lambda name: True
         else:
-            self.match = re.compile(match).search
+            try:
+                self.match = re.compile(match).search
+            except re.error as error:
+                raise ValueError("bad match regexp {!r}: {}".
+                                 format(match, error))
         for filename in os.listdir(dir_name):
             self._record_file(filename)
         self._clean_files()
