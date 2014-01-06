@@ -36,3 +36,7 @@ class TestLimitFiles(lftests.LimitFilesTestCase):
 
     def watch(self, **kwargs):
         return self.limits.add_watch(self.workdir, **kwargs)
+
+    def test_upsidedown_count_fails(self):
+        self.assertRaises(ValueError, self.watch, high=2, low=4)
+

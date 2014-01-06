@@ -28,7 +28,9 @@ class LimitProcessor(pyinotify.ProcessEvent):
         self.files = {}
         self.min = low
         self.delete_threshold = high - low
-        if match is None:
+        if self.delete_threshold < 0:
+            raise ValueError("high {} must be above low {}".format(high, low))
+        elif match is None:
             self.match = lambda name: True
         else:
             self.match = re.compile(match).search
