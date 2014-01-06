@@ -57,10 +57,13 @@ class LimitProcessor(pyinotify.ProcessEvent):
         if len(self.files) < self.max:
             return
         sorted_names = sorted(self.files.keys(), key=self.files.get)
-        for path in itertools.islice(sorted_names, self.max - self.min):
+        deletes_left = len(self.files) - self.min
+        for path in itertools.takewhile(lambda x: deletes_left > 0,
+                                        sorted_names):
             del self.files[path]
             with self._skip_os_errors():
                 os.unlink(path)
+                deletes_left -= 1
 
     def process_IN_CREATE(self, event):
         self._record_file(event.name)
