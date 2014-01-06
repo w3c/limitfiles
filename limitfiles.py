@@ -13,6 +13,8 @@
 # Written December 2013 by Brett Smith <brett@w3.org>
 # This module depends on the third-party pyinotify module.
 
+VERSION="1.0"
+
 import contextlib
 import errno
 import itertools
