@@ -46,37 +46,38 @@ class LimitFilesTestCase(unittest.TestCase):
             os.utime(path, (stamp, stamp))
         self.next_name = stop
 
-    # Call with one sequence, or arguments to temp_filenames
-    def assertFilesLeft(self, arg1, *args):
-        if not args:
-            expected = arg1
-        else:
-            expected = list(self.temp_filenames(arg1, *args))
-        actual = sorted(os.listdir(self.workdir), key=int)
-        self.assertSequenceEqual(actual, expected)
+    def filename_set(self, seq):
+        return frozenset(str(item) for item in seq)
+
+    def assertFilesLeft(self, must_have, may_have=()):
+        must_have = self.filename_set(must_have)
+        may_have = self.filename_set(may_have) | must_have
+        actual = self.filename_set(os.listdir(self.workdir))
+        self.assertSetEqual(must_have, actual & must_have)
+        self.assertSetEqual(actual, actual & may_have)
 
     def test_count_limit(self):
         self.watch(high=5, low=2)
         self.touch_files(6)
-        self.assertFilesLeft(4, 7)
+        self.assertFilesLeft([5, 6], [4])
 
     def test_count_limit_after_files_exist(self):
         self.touch_files(3)
         self.watch(high=5, low=2)
         self.touch_files(3)
-        self.assertFilesLeft(4, 7)
+        self.assertFilesLeft([5, 6], [4])
 
     def test_count_limit_on_existing_files(self):
         self.touch_files(6)
         self.watch(high=5, low=2)
-        self.assertFilesLeft(5, 7)
+        self.assertFilesLeft([5, 6])
 
     def test_limit_respects_mtime(self):
         self.watch(high=5, low=2)
         self.touch_files(4)
         os.utime(self.workpath(1), (10, 10))
-        self.touch_files(2)
-        self.assertFilesLeft(['1', '5', '6'])
+        self.touch_files(1)
+        self.assertFilesLeft([1, 5])
 
     def test_limit_respects_deletes(self):
         self.watch(high=5, low=1)
@@ -84,12 +85,12 @@ class LimitFilesTestCase(unittest.TestCase):
         for num in [1, 2]:
             os.unlink(self.workpath(num))
         self.touch_files(2)
-        self.assertFilesLeft(3, 7)
+        self.assertFilesLeft(range(3, 7))
 
     def test_match_limit(self):
         self.watch(high=2, low=1, match='[1-3]')
         self.touch_files(8)
-        base_expected = list(self.temp_filenames(4, 9))
-        self.assertFilesLeft(['3'] + base_expected)
+        base_expected = list(range(4, 9))
+        self.assertFilesLeft([3] + base_expected)
         self.touch_files(3)
-        self.assertFilesLeft(base_expected + ['9', '11'])
+        self.assertFilesLeft(base_expected + [9, 11])
