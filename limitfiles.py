@@ -48,7 +48,8 @@ class LimitProcessor(pyinotify.ProcessEvent):
         self._clean_files()
 
     @contextlib.contextmanager
-    def _skip_os_errors(self, errnos=frozenset({errno.ENOENT, errno.EPERM})):
+    def _skip_os_errors(self, errnos=frozenset({errno.ENOENT, errno.EPERM,
+                                                errno.EACCES})):
         try:
             yield
         except OSError as error:
@@ -71,10 +72,16 @@ class LimitProcessor(pyinotify.ProcessEvent):
         sorted_names = sorted(self.files.keys(), key=self.files.get)
         for path in itertools.takewhile(lambda x: deletes_left > 0,
                                         sorted_names):
-            del self.files[path]
             with self._skip_os_errors():
                 os.unlink(path)
+                del self.files[path]
                 deletes_left -= 1
+        # Check how many files are left.  If there are still enough to trigger
+        # cleaning, that means the OS won't let us enforce the limit.  Modify
+        # the limit to compensate.
+        deletes_left = len(self.files) - self.min
+        if deletes_left >= self.delete_threshold:
+            self.delete_threshold = deletes_left + 1
 
     def process_IN_CREATE(self, event):
         self._record_file(event.name)

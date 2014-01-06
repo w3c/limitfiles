@@ -94,3 +94,13 @@ class LimitFilesTestCase(unittest.TestCase):
         self.assertFilesLeft([3] + base_expected)
         self.touch_files(3)
         self.assertFilesLeft(base_expected + [9, 11])
+
+    def test_unwritable_files(self):
+        self.touch_files(4)
+        os.chmod(self.workdir, 0o500)
+        self.watch(high=4, low=2)
+        self.assertFilesLeft(range(1, 5))
+        os.chmod(self.workdir, 0o700)
+        self.assertFilesLeft([3, 4], [1, 2])
+        self.touch_files(1)
+        self.assertFilesLeft([4, 5], [2, 3])
