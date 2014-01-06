@@ -32,10 +32,10 @@ class LimitProcessor(pyinotify.ProcessEvent):
         else:
             self.match = re.compile(match).search
         for filename in os.listdir(dir_name):
-            self.record_file(filename)
-        self.clean_files()
+            self._record_file(filename)
+        self._clean_files()
 
-    def record_file(self, filename):
+    def _record_file(self, filename):
         if not self.match(filename):
             return
         path = os.path.join(self.dir_name, filename)
@@ -49,9 +49,17 @@ class LimitProcessor(pyinotify.ProcessEvent):
             return
         self.files[path] = stats.st_mtime
 
+    def _clean_files(self):
+        if len(self.files) < self.max:
+            return
+        sorted_names = sorted(self.files.keys(), key=self.files.get)
+        for path in itertools.islice(sorted_names, self.max - self.min):
+            os.unlink(path)
+            del self.files[path]
+
     def process_IN_CREATE(self, event):
-        self.record_file(event.name)
-        self.clean_files()
+        self._record_file(event.name)
+        self._clean_files()
 
     process_IN_ATTRIB = process_IN_CREATE
     process_IN_MODIFY = process_IN_CREATE
@@ -64,14 +72,6 @@ class LimitProcessor(pyinotify.ProcessEvent):
             pass
 
     process_IN_MOVED_FROM = process_IN_DELETE
-
-    def clean_files(self):
-        if len(self.files) < self.max:
-            return
-        sorted_names = sorted(self.files.keys(), key=self.files.get)
-        for path in itertools.islice(sorted_names, self.max - self.min):
-            os.unlink(path)
-            del self.files[path]
 
 
 class LimitManager(pyinotify.WatchManager):
