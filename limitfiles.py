@@ -13,6 +13,7 @@
 # Written December 2013 by Brett Smith <brett@w3.org>
 # This module depends on the third-party pyinotify module.
 
+import contextlib
 import errno
 import itertools
 import os
@@ -35,27 +36,31 @@ class LimitProcessor(pyinotify.ProcessEvent):
             self._record_file(filename)
         self._clean_files()
 
+    @contextlib.contextmanager
+    def _skip_os_errors(self, errnos=frozenset({errno.ENOENT, errno.EPERM})):
+        try:
+            yield
+        except OSError as error:
+            if error.errno not in errnos:
+                raise
+
     def _record_file(self, filename):
         if not self.match(filename):
             return
         path = os.path.join(self.dir_name, filename)
-        try:
+        with self._skip_os_errors():
             stats = os.stat(path)
-        except OSError as error:
-            if error.errno in (errno.ENOENT, errno.EPERM):
-                return
-            raise
-        if not S_ISREG(stats.st_mode):
-            return
-        self.files[path] = stats.st_mtime
+            if S_ISREG(stats.st_mode):
+                self.files[path] = stats.st_mtime
 
     def _clean_files(self):
         if len(self.files) < self.max:
             return
         sorted_names = sorted(self.files.keys(), key=self.files.get)
         for path in itertools.islice(sorted_names, self.max - self.min):
-            os.unlink(path)
             del self.files[path]
+            with self._skip_os_errors():
+                os.unlink(path)
 
     def process_IN_CREATE(self, event):
         self._record_file(event.name)
