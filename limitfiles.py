@@ -132,11 +132,11 @@ def _parse_options(args):
     return parser.parse_args(args)
 
 def _config_error(message):
-    print("Configuration error:", message, file=sys.stderr)
+    print("limitfiles configuration error:", message, file=sys.stderr)
     sys.exit(3)
 
 def _config_warning(sec_name, message):
-    print("Warning: can't watch {}: {}".format(sec_name, message),
+    print("limitfiles warning: can't watch {}: {}".format(sec_name, message),
           file=sys.stderr)
 
 def _iter_config(config):
