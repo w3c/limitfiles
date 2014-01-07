@@ -131,3 +131,10 @@ class LimitFilesTestCase(unittest.TestCase):
     def test_nondir_watch_fails(self):
         with tempfile.NamedTemporaryFile(prefix='limitfiles') as tmpfile:
             self.assertBadWatch(dir_name=tmpfile.name, high=2, low=1)
+
+    def test_negative_low_fails(self):
+        self.assertBadWatch(low=-2, high=2)
+
+    def test_negative_high_fails(self):
+        self.assertBadWatch(low=-2, high=-1)
+
