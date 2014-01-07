@@ -35,16 +35,9 @@ class TestLimitFiles(lftests.LimitFilesTestCase):
             self.notifier.process_events()
         super().assertFilesLeft(*args)
 
+    def assertBadWatch(self, *args, **kwargs):
+        self.assertRaises(ValueError, self.watch, *args, **kwargs)
+
     def watch(self, **kwargs):
-        return self.limits.add_watch(self.workdir, **kwargs)
-
-    def test_upsidedown_count_fails(self):
-        self.assertRaises(ValueError, self.watch, high=2, low=4)
-
-    def test_bad_regexp_fails(self):
-        self.assertRaises(ValueError, self.watch, low=1, high=2, match='[')
-
-    def test_nondir_watch_fails(self):
-        with tempfile.NamedTemporaryFile(prefix='limitfiles') as tmpfile:
-            self.assertRaises(ValueError, self.limits.add_watch, tmpfile.name,
-                              low=1, high=2)
+        dir_name = kwargs.pop('dir_name', self.workdir)
+        return self.limits.add_watch(dir_name, **kwargs)

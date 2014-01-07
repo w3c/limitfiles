@@ -91,17 +91,6 @@ class TestLimitFilesDaemon(lftests.LimitFilesTestCase):
         self.assertIsNotNone(returncode)
         self.assertGreater(returncode, 0)
 
-    def test_upsidedown_count_fails(self):
-        self.watch(high=2, low=4)
+    def assertBadWatch(self, *args, **kwargs):
+        self.watch(**kwargs)
         self.assertNoDaemon()
-
-    def test_bad_regexp_fails(self):
-        self.watch(low=1, high=2, match='[')
-        self.assertNoDaemon()
-
-    def test_nondir_watch_fails(self):
-        with tempfile.NamedTemporaryFile(prefix='limitfiles') as tmpfile:
-            self.write_config(dir_name=tmpfile.name, high=4, low=2)
-            self.run_daemon()
-            self.assertNoDaemon()
-

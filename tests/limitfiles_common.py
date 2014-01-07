@@ -27,7 +27,8 @@ class LimitFilesTestCase(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.workdir, True)
 
-    def watch(self, name="Test Watch", high=None, low=None, match=None):
+    def watch(self, name="Test Watch", dir_name=None, high=None, low=None,
+              match=None):
         raise NotImplementedError("LimitFilesTestCase.watch is abstract")
 
     def temp_filenames(self, *args):
@@ -55,6 +56,11 @@ class LimitFilesTestCase(unittest.TestCase):
         actual = self.filename_set(os.listdir(self.workdir))
         self.assertSetEqual(must_have, actual & must_have)
         self.assertSetEqual(actual, actual & may_have)
+
+    def assertBadWatch(self, name="Test Watch", dir_name=None, high=None,
+                       low=None, match=None):
+        raise NotImplementedError(
+            "LimitFilesTestCase.assertBadWatch is abstract")
 
     def test_count_limit(self):
         self.watch(high=5, low=2)
@@ -115,3 +121,13 @@ class LimitFilesTestCase(unittest.TestCase):
         self.assertFilesLeft(non_files)
         self.touch_files(4)
         self.assertFilesLeft(non_files | {3, 4})
+
+    def test_upsidedown_count_fails(self):
+        self.assertBadWatch(high=2, low=4)
+
+    def test_bad_regexp_fails(self):
+        self.assertBadWatch(low=1, high=2, match='[')
+
+    def test_nondir_watch_fails(self):
+        with tempfile.NamedTemporaryFile(prefix='limitfiles') as tmpfile:
+            self.assertBadWatch(dir_name=tmpfile.name, high=2, low=1)
