@@ -78,6 +78,11 @@ class LimitFilesTestCase(unittest.TestCase):
         self.watch(high=5, low=2)
         self.assertFilesLeft([5, 6])
 
+    def test_existing_files_way_over_limit(self):
+        self.touch_files(9)
+        self.watch(high=2, low=1)
+        self.assertFilesLeft([9], [8])
+
     def test_limit_respects_mtime(self):
         self.watch(high=5, low=2)
         self.touch_files(4)
@@ -137,4 +142,3 @@ class LimitFilesTestCase(unittest.TestCase):
 
     def test_negative_high_fails(self):
         self.assertBadWatch(low=-2, high=-1)
-
