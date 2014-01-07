@@ -26,6 +26,7 @@ from stat import S_ISREG
 
 class LimitProcessor(pyinotify.ProcessEvent):
     _common_errnos = frozenset({errno.ENOENT, errno.EPERM, errno.EACCES})
+    _changed_under_errnos = _common_errnos | {errno.ENOTDIR}
 
     def my_init(self, dir_name, high, low, match=None):
         self.dir_name = dir_name
@@ -46,10 +47,16 @@ class LimitProcessor(pyinotify.ProcessEvent):
                 raise ValueError("bad match regexp {!r}: {}".
                                  format(match, error))
         try:
-            with self._skip_os_errors():
-                listing = os.listdir(dir_name)
+            self.process_IN_Q_OVERFLOW(skip_errors=self._common_errnos)
         except OSError as error:
             raise ValueError(error)
+
+    def process_IN_Q_OVERFLOW(self, event=None,
+                              skip_errors=_changed_under_errnos):
+        self.files = {}
+        listing = []
+        with self._skip_os_errors(skip_errors):
+            listing = os.listdir(self.dir_name)
         for filename in listing:
             self._record_file(filename)
         self._clean_files()
@@ -107,7 +114,7 @@ class LimitProcessor(pyinotify.ProcessEvent):
 
 
 class LimitManager(pyinotify.WatchManager):
-    mask = pyinotify.IN_ONLYDIR
+    mask = pyinotify.IN_ONLYDIR | pyinotify.IN_Q_OVERFLOW
     for method in (name.split('_', 1)[1] for name in dir(LimitProcessor)
                    if name.startswith('process_')):
         mask |= pyinotify.EventsCodes.OP_FLAGS.get(method, 0)
