@@ -104,3 +104,14 @@ class LimitFilesTestCase(unittest.TestCase):
         self.assertFilesLeft([3, 4], [1, 2])
         self.touch_files(1)
         self.assertFilesLeft([4, 5], [2, 3])
+
+    def test_nonfile_handling(self):
+        self.watch(high=4, low=2)
+        os.mkdir(self.workpath('d1'))
+        os.mkdir(self.workpath('d2'))
+        os.mkfifo(self.workpath('f'))
+        os.symlink('d1', self.workpath('l'))
+        non_files = {'d1', 'd2', 'f', 'l'}
+        self.assertFilesLeft(non_files)
+        self.touch_files(4)
+        self.assertFilesLeft(non_files | {3, 4})
