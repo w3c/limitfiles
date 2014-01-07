@@ -28,6 +28,15 @@ When the count of watched files hits the number in `max`, limitfiles will delete
 
 You can define as many sections like this as you need.
 
+## Command-line options
+
+      -h, --help            show this help message and exit
+      -c CONF_NAME, --config=CONF_NAME
+                            use this configuration file
+      -f, --foreground      run in the foreground
+      -p PIDFILE, --pidfile=PIDFILE
+                            write PID to this file
+
 ## Contact
 
 <brett@w3.org>
