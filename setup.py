@@ -26,5 +26,6 @@ setup(name="limitfiles",
       url=URL,
       download_url=URL,
       py_modules=['limitfiles'],
+      data_files=[('/etc/init.d', ['limitfiles'])],
       license="W3C Software Notice and License"
       )
