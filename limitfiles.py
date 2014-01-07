@@ -155,7 +155,10 @@ def _iter_config(config):
         except configparser.Error as error:
             _config_warning(sec_name, error)
             continue
-        watch_args['match'] = config[sec_name].get('match')
+        try:
+            watch_args['match'] = config.get(sec_name, 'match')
+        except configparser.NoOptionError:
+            pass
         if not os.path.isdir(dir_name):
             _config_warning(sec_name, "{} is not a directory".format(dir_name))
         else:
