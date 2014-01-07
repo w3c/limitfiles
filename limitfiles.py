@@ -125,7 +125,6 @@ class LimitManager(pyinotify.WatchManager):
 
 
 def _parse_options(args):
-    import optparse
     parser = optparse.OptionParser(usage="%prog [options]")
     parser.add_option('-c', '--config',
                       dest='conf_name', default='/etc/limitfiles.ini',
@@ -163,7 +162,6 @@ def _iter_config(config):
             yield dir_name, watch_args
 
 def _build_watch_manager(filename):
-    import configparser
     config = configparser.SafeConfigParser()
     if not config.read(filename):
         _config_error("Could not parse {}".format(filename))
@@ -186,5 +184,7 @@ def main(args):
 
 
 if __name__ == '__main__':
+    import configparser
+    import optparse
     import sys
     main(sys.argv[1:])
