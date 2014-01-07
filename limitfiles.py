@@ -25,9 +25,10 @@ import re
 from stat import S_ISREG
 
 class LimitProcessor(pyinotify.ProcessEvent):
+    _common_errnos = frozenset({errno.ENOENT, errno.EPERM, errno.EACCES})
+
     def my_init(self, dir_name, high, low, match=None):
         self.dir_name = dir_name
-        self.files = {}
         self.min = low
         self.delete_threshold = high - low
         if low < 0:
@@ -54,8 +55,7 @@ class LimitProcessor(pyinotify.ProcessEvent):
         self._clean_files()
 
     @contextlib.contextmanager
-    def _skip_os_errors(self, errnos=frozenset({errno.ENOENT, errno.EPERM,
-                                                errno.EACCES})):
+    def _skip_os_errors(self, errnos=_common_errnos):
         try:
             yield
         except OSError as error:
