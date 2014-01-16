@@ -18,6 +18,11 @@ from distutils.core import setup
 from limitfiles import __version__
 URL = "http://www.github.com/w3c/limitfiles"
 
+import os
+min_umask = 0o022
+old_umask = os.umask(min_umask)
+os.umask(old_umask & min_umask)
+
 setup(name="limitfiles",
       version=__version__,
       description="Use inotify to automatically clean files",
