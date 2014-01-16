@@ -15,11 +15,11 @@
 
 from distutils.core import setup
 
-from limitfiles import VERSION
+from limitfiles import __version__
 URL = "http://www.github.com/w3c/limitfiles"
 
 setup(name="limitfiles",
-      version=VERSION,
+      version=__version__,
       description="Use inotify to automatically clean files",
       author="Brett Smith",
       author_email="brett@w3.org",

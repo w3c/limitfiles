@@ -49,11 +49,12 @@ COPYRIGHT AND LICENSE
 
   .. _W3C® Software License: http://www.w3.org/Consortium/Legal/2002/copyright-software-20021231
 
+:Version: 1.1
 :Author: Brett Smith <brett@w3.org>
 :Date: 2014-01-16
 """
 
-VERSION="1.0"
+__version__ = '1.1'
 
 import contextlib
 import errno
