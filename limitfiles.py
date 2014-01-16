@@ -180,6 +180,8 @@ def _build_watch_manager(filename):
     return watch_manager
 
 def main(args):
+    global configparser, optparse, sys
+    import configparser, optparse, sys
     options, args = _parse_options(args)
     watches = _build_watch_manager(options.conf_name)
     notifier = pyinotify.Notifier(watches)
@@ -187,7 +189,5 @@ def main(args):
 
 
 if __name__ == '__main__':
-    import configparser
-    import optparse
     import sys
     main(sys.argv[1:])
