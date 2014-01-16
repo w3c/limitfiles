@@ -28,14 +28,9 @@ When the count of watched files hits the number in `max`, limitfiles will delete
 
 You can define as many sections like this as you need.
 
-## Command-line options
+## Usage
 
-      -h, --help            show this help message and exit
-      -c CONF_NAME, --config=CONF_NAME
-                            use this configuration file
-      -f, --foreground      run in the foreground
-      -p PIDFILE, --pidfile=PIDFILE
-                            write PID to this file
+Refer to the pydoc for command-line options and module documentation.
 
 ## Contact
 
